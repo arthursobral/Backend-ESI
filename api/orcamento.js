@@ -1,40 +1,43 @@
 module.exports = app => {
     const postOrcamento = async (req,res) => {
-        const cliente = await app.db('Cliente')
-                            .where({nomeCliente: req.body.nome})
-                            .then(id => {return id})
-                            .catch(err => res.status(400).json(err))
+        await app.db.transaction(async (trx) => {
+            const cliente = await app.db('Cliente')
+                                .where({nomeCliente: req.body.nome})
+                                .then(id => {return id})
+                                .catch(trx.rollback, err => res.status(400).json(err))
 
-        if(cliente.length > 0){
-            const aux = await app.db('Carro')
-                .where({idCliente: cliente[0].idCliente, placaCarro: req.body.placa})
-                .then(data => {return data})
-                .catch(err => res.status(400).json(err))
-            
-            const mec = await app.db('Mecanico')
-                .where({nomeMecanico: req.body.mecanico})
-                .then(mec => {
-                    return mec[0].idMecanico
-                })
-                .catch(err => res.status(400).json(err))
+            if(cliente.length > 0){
+                const aux = await app.db('Carro')
+                    .where({idCliente: cliente[0].idCliente, placaCarro: req.body.placa})
+                    .then(data => {return data})
+                    .catch(trx.rollback, err => res.status(400).json(err))
+                
+                const mec = await app.db('Mecanico')
+                    .where({nomeMecanico: req.body.mecanico})
+                    .then(mec => {
+                        return mec[0].idMecanico
+                    })
+                    .catch(trx.rollback, err => res.status(400).json(err))
 
-            const peca = await app.db('Peca')
-                .where({nomePeca: req.body.peca})
-                .then(mec => {
-                    return mec[0].idPeca
-                })
-                .catch(err => res.status(400).json(err))
-            
-            
-            await app.db('Conserto')
-                .insert({idCarro: aux[0].idCarro, idMecanico: mec, idPeca: peca, obsConserto: req.body.obs,
-                    valorConserto: req.body.valor,previsaoConserto: req.body.previsao})
-                .then(res.status(200).send('Registro de manutencao feito'))
-                .catch(err => res.status(400).json(err))
-            
-        }else{
-            return res.send('Cliente nao encontrado')
-        }
+                const peca = await app.db('Peca')
+                    .where({nomePeca: req.body.peca})
+                    .then(mec => {
+                        return mec[0].idPeca
+                    })
+                    .catch(trx.rollback, err => res.status(400).json(err))
+                
+                
+                await app.db('Conserto')
+                    .insert({idCarro: aux[0].idCarro, idMecanico: mec, idPeca: peca, obsConserto: req.body.obs,
+                        valorConserto: req.body.valor,previsaoConserto: req.body.previsao})
+                    .then(trx.commit)
+                    .then(res.status(200).send('Registro de manutencao feito'))
+                    .catch(trx.rollback, err => res.status(400).json(err))
+                
+            }else{
+                return res.send('Cliente nao encontrado')
+            }
+        })
     }
 
     const getOrcamento = async (req, res) => {
