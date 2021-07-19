@@ -10,6 +10,7 @@ module.exports = app => {
                         return 0;
                     }
                 })
+                .catch(trx.rollback, err => res.status(400).json(err))
 
             const teste = await app.db('Agenda')
                 .where({dataAgenda: req.body.data, horaAgenda: req.body.hora})
@@ -20,7 +21,7 @@ module.exports = app => {
                         return 0;
                     }
                 })
-                .catch(err => res.status(400).json(err))
+                .catch(trx.rollback, err => res.status(400).json(err))
 
             
             if(aux == 0){
