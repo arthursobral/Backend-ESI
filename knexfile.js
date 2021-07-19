@@ -1,4 +1,4 @@
-// Update with your config settings.
+// Não esquece de mudar o banco para qual vc ta usando
 module.exports = {
   client: 'postgresql',
   connection: {
