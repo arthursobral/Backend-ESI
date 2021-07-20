@@ -3,7 +3,6 @@ exports.up = function(knex) {
     return knex.schema.createTable('Agenda' , table => {
         table.increments('idAgenda').primary()
         table.datetime('dataAgenda')
-        table.time('horaAgenda')
         table.integer('idCliente').references('idCliente').inTable('Cliente')
     })
 };
