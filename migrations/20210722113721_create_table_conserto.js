@@ -9,7 +9,7 @@ exports.up = function(knex) {
         table.double('valorConserto')
         table.datetime('previsaoConserto')
         table.datetime('dataConserto')
-        table.bool('confirmacaoConserto')
+        table.boolean('confirmacaoConserto')
     })
 };
 

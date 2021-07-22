@@ -20,7 +20,6 @@ module.exports = app => {
                 .catch(trx.rollback, err => res.status(400).json(err))
 
 
-            console.log(aux)
             const teste = await app.db('Agenda')
                 .where({dataAgenda: dia.toLocaleString()})
                 .then(idData =>{ 

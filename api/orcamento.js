@@ -41,12 +41,13 @@ module.exports = app => {
     }
 
     const getOrcamento = async (req, res) => {
-        const carros = {
+        const carros = [{
             carro: undefined,
-            placa: undefined
-        }
-
-        let valorTotal = 0.0;    
+            placa: undefined,
+            ano: undefined,
+            cor: undefined,
+        }]
+    
         const aux = await app.db('Carro')
             .where({placaCarro: req.params.placa})
             .then(data => { return data})
@@ -65,48 +66,81 @@ module.exports = app => {
             return res.send('Carro nao estao na manutencao')
         }
         else{
-            const consertos = await app.db('Conserto')
-                .where({idCarro: aux[0].idCarro})
-                .then(conserto => {return conserto})
-                .catch(err => res.status(400).json(err))
+            app.db.raw(`select "idConserto","nomeModelo","nomeMarca","placaCarro","anoCarro","nomeCor","nomeMecanico","nomePeca",
+            "obsConserto","valorConserto","dataConserto","confirmacaoConserto"
+            from public."Conserto"
+            inner join public."Carro" C on C."idCarro" = "Conserto"."idCarro"
+            inner join public."Modelo" M on M."idModelo" = C."idModelo"
+            inner join public."Marca" A on A."idMarca" = M."idMarca"
+            inner join public."Cor" W on W."idCor" = C."idCor"
+            inner join public."Mecanico" N on N."idMecanico" = "Conserto"."idMecanico"
+            inner join public."Peca" P on P."idPeca" = "Conserto"."idPeca"
+            where C."placaCarro" = '${req.params.placa}'`)
+            .then(data => {
+                carros[0].carro = data.rows[0].nomeModelo
+                carros[0].placa = data.rows[0].placaCarro
+                carros[0].ano = data.rows[0].anoCarro
+                carros[0].cor = data.rows[0].nomeCor 
+            })
+            .catch(err => res.status(400).json(err))
 
-            for(conserto of consertos){
-                await app.db('Carro')
-                .where({idCarro: conserto.idCarro})
-                .then(carro => {
-                    carros.carro = carro[0].idModelo
-                    carros.placa = carro[0].placaCarro
-                })
-                .catch(err => res.status(400).json(err))
+            app.db.raw(`select "nomeMecanico","nomePeca",
+            "obsConserto","valorConserto","dataConserto","confirmacaoConserto"
+            from public."Conserto"
+            inner join public."Carro" C on C."idCarro" = "Conserto"."idCarro"
+            inner join public."Modelo" M on M."idModelo" = C."idModelo"
+            inner join public."Marca" A on A."idMarca" = M."idMarca"
+            inner join public."Cor" W on W."idCor" = C."idCor"
+            inner join public."Mecanico" N on N."idMecanico" = "Conserto"."idMecanico"
+            inner join public."Peca" P on P."idPeca" = "Conserto"."idPeca"
+            where C."placaCarro" = '${req.params.placa}'`)
+            .then(data => {
+                for(row of data.rows){
+                    carros.push(row)
+                }
+                console.log(carros)
+                res.json(carros)
+            })
+            .catch(err => res.status(400).json(err))
+            console.log(carros)
+
+            // const consertos = await app.db('Conserto')
+            //     .where({idCarro: aux[0].idCarro})
+            //     .then(conserto => {return conserto})
+            //     .catch(err => res.status(400).json(err))
+
+            // for(conserto of consertos){
+            //     await app.db('Carro')
+            //     .where({idCarro: conserto.idCarro})
+            //     .then(carro => {
+            //         carros.carro = carro[0].idModelo
+            //         carros.placa = carro[0].placaCarro
+            //     })
+            //     .catch(err => res.status(400).json(err))
                 
-                await app.db('ModeloCarro')
-                    .where({idModelo: carros.carro})
-                    .then(modelo => {
-                        carros.carro = modelo[0].nomeModelo;
-                    })
-                    .catch(err => res.status(400).json(err))
+            //     await app.db('Modelo')
+            //         .where({idModelo: carros.carro})
+            //         .then(modelo => {
+            //             carros.carro = modelo[0].nomeModelo;
+            //         })
+            //         .catch(err => res.status(400).json(err))
 
-                conserto.idCarro = carros
+            //     conserto.idCarro = carros
 
-                await app.db('Mecanico')
-                    .where({idMecanico: conserto.idMecanico})
-                    .then(mec => {
-                        conserto.idMecanico = mec[0].nomeMecanico
-                    })
-                    .catch(err => res.status(400).json(err))
+            //     await app.db('Mecanico')
+            //         .where({idMecanico: conserto.idMecanico})
+            //         .then(mec => {
+            //             conserto.idMecanico = mec[0].nomeMecanico
+            //         })
+            //         .catch(err => res.status(400).json(err))
 
-                await app.db('Peca')
-                    .where({idPeca: conserto.idPeca})
-                    .then(mec => {
-                        conserto.idPeca = mec[0].nomePeca
-                    })
-                    .catch(err => res.status(400).json(err))
-                    
-                valorTotal += conserto.valorConserto
-            }
-            console.log(valorTotal + 200.00)
-            consertos.push({valorTotal: valorTotal})
-            res.json(consertos)
+            //     await app.db('Peca')
+            //         .where({idPeca: conserto.idPeca})
+            //         .then(mec => {
+            //             conserto.idPeca = mec[0].nomePeca
+            //         })
+            //         .catch(err => res.status(400).json(err))
+            // }
         }
     }
 
